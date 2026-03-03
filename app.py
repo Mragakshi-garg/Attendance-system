@@ -85,6 +85,43 @@ def register():
 def take_attendance():
     return render_template('take_attendance.html')
 
+@app.route('/manage')
+def manage():
+    conn = get_db_connection()
+    students = conn.execute('SELECT * FROM students ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('manage.html', students=students)
+
+@app.route('/delete_student/<int:id>', methods=['POST'])
+def delete_student(id):
+    conn = get_db_connection()
+    student = conn.execute('SELECT * FROM students WHERE id = ?', (id,)).fetchone()
+    
+    if student:
+        # Delete image file
+        filepath = student['encoding_path']
+        if filepath and os.path.exists(filepath):
+            try:
+                os.remove(filepath)
+                print(f"Deleted face image: {filepath}")
+            except Exception as e:
+                print(f"Error deleting file {filepath}: {e}")
+                
+        # Delete from DB
+        conn.execute('DELETE FROM students WHERE id = ?', (id,))
+        # Also delete their attendance records to maintain relational integrity
+        conn.execute('DELETE FROM attendance WHERE student_id = ?', (id,))
+        conn.commit()
+        
+        # Reload cache so the deleted student is removed from RAM
+        camera.init_app()
+        flash(f"Student {student['name']} deleted successfully!")
+    else:
+        flash("Student not found.")
+        
+    conn.close()
+    return redirect(url_for('manage'))
+
 @app.route('/api/recognize', methods=['POST'])
 def api_recognize():
     """Receives a base64 image from the frontend, detects faces, and logs attendance."""

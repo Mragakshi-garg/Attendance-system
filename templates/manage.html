@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            padding: 10px;
+            width: 300px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .face-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="flash-message">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="header-content">
+            <h1>Manage Students</h1>
+            <input type="text" id="searchInput" class="search-box" placeholder="Search by name or department...">
+        </div>
+
+        <table id="studentsTable">
+            <thead>
+                <tr>
+                    <th>Photo</th>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>
+                        <img src="{{ url_for('static', filename=student.encoding_path.split('static\\')[-1] if 'static\\' in student.encoding_path else student.encoding_path.split('static/')[-1]) }}"
+                            class="face-preview" alt="Face"
+                            onerror="this.src='https://via.placeholder.com/50?text=No+Img'">
+                    </td>
+                    <td>{{ student.id }}</td>
+                    <td class="student-name">{{ student.name }}</td>
+                    <td class="student-dept">{{ student.department }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_student', id=student.id) }}" method="POST"
+                            onsubmit="return confirm('Are you sure you want to delete {{ student.name }}? This will also delete their attendance records and face image.');">
+                            <button type="submit" class="delete-btn">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center;">No students registered yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/" style="color: #3498db; text-decoration: none; font-weight: bold;">&larr; Back Home</a>
+        </div>
+    </div>
+
+    <script>
+        // Simple client-side search filtering
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            let filter = this.value.toLowerCase();
+            let rows = document.querySelectorAll('#studentsTable tbody tr');
+
+            rows.forEach(row => {
+                // Skip the "No students" row if present
+                if (row.cells.length === 1) return;
+
+                let name = row.querySelector('.student-name').textContent.toLowerCase();
+                let dept = row.querySelector('.student-dept').textContent.toLowerCase();
+
+                if (name.includes(filter) || dept.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -25,27 +25,30 @@ def init_app():
     
     # If the number of students in DB matches our cache, we don't need to do anything
     if len(students) != len(KNOWN_FACE_NAMES):
-        print("Loading face encodings into Global RAM Cache...")
+        print("Reloading face encodings into Global RAM Cache...")
+        KNOWN_FACE_ENCODINGS.clear()
+        KNOWN_FACE_NAMES.clear()
+        KNOWN_FACE_IDS.clear()
+        
         for student in students:
-            # Only process students that aren't already in our cache
-            if student['name'] not in KNOWN_FACE_NAMES:
-                try:
-                    image = face_recognition.load_image_file(student['encoding_path'])
-                    encodings = face_recognition.face_encodings(image)
-                    if len(encodings) > 0:
-                        encoding = encodings[0]
-                        KNOWN_FACE_ENCODINGS.append(encoding)
-                        KNOWN_FACE_NAMES.append(student['name'])
-                        KNOWN_FACE_IDS.append(student['id'])
-                        print(f"Loaded new encoding for: {student['name']}")
-                    else:
-                        print(f"WARNING: No face found in image for {student['name']}")
-                except Exception as e:
-                    print(f"Error loading image for {student['name']}: {e}")
+            try:
+                image = face_recognition.load_image_file(student['encoding_path'])
+                encodings = face_recognition.face_encodings(image)
+                if len(encodings) > 0:
+                    encoding = encodings[0]
+                    KNOWN_FACE_ENCODINGS.append(encoding)
+                    KNOWN_FACE_NAMES.append(student['name'])
+                    KNOWN_FACE_IDS.append(student['id'])
+                    print(f"Loaded encoding for: {student['name']}")
+                else:
+                    print(f"WARNING: No face found in image for {student['name']}")
+            except Exception as e:
+                print(f"Error loading image for {student['name']}: {e}")
     
     # Load today's attendance
     today = datetime.now().strftime("%Y-%m-%d")
     records = conn.execute('SELECT student_id FROM attendance WHERE date = ?', (today,)).fetchall()
+    ALREADY_MARKED_TODAY.clear()
     for r in records:
         ALREADY_MARKED_TODAY.add(r['student_id'])
     
