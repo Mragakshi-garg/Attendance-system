@@ -5,51 +5,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Face Recognition Attendance</title>
-    <!-- We will use a basic clean CSS file next -->
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
-            margin-top: 50px;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
         }
 
-        .nav-links a {
-            margin: 15px;
-            padding: 10px 20px;
-            background-color: #007bff;
+        .header-section {
+            background: linear-gradient(135deg, #86b5e7, #0056b3);
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
+            padding: 60px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .nav-links a:hover {
-            background-color: #0056b3;
+        .header-section h1 {
+            margin: 0 0 15px 0;
+            font-size: 2.5rem;
+            letter-spacing: 1px;
+        }
+
+        .header-section p {
+            margin: 0;
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .main-container {
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 0 20px;
+            min-height: calc(100vh - 250px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-top: 5px solid #ccc;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .card-desc {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Specific Card Colors */
+        .card-register {
+            border-top-color: #007bff;
+        }
+
+        .card-register .card-icon {
+            color: #007bff;
+        }
+
+        .card-camera {
+            border-top-color: #e67e22;
+        }
+
+        .card-camera .card-icon {
+            color: #e67e22;
+        }
+
+        .card-dashboard {
+            border-top-color: #2ecc71;
+        }
+
+        .card-dashboard .card-icon {
+            color: #2ecc71;
+        }
+
+        .card-manage {
+            border-top-color: #9b59b6;
+        }
+
+        .card-manage .card-icon {
+            color: #9b59b6;
+        }
+
+        .flash-messages {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .flash-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: auto;
         }
     </style>
 </head>
 
 <body>
-    <h1>Face Recognition Attendance System</h1>
-
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-    <div style="color: #2ecc71; font-weight: bold; margin-bottom: 20px;">
-        {% for message in messages %}
-        <p>{{ message }}</p>
-        {% endfor %}
+    <div class="header-section">
+        <h1>Face Recognition Attendance System</h1>
+        <p>Smart, seamless, and secure attendance tracking portal</p>
     </div>
-    {% endif %}
-    {% endwith %}
 
-    <p>Welcome to the automated attendance tracking portal.</p>
+    <div class="main-container">
 
-    <div class="nav-links">
-        <a href="/register">Register New Student</a>
-        <a href="/take_attendance" style="background-color: #e67e22;">Start Attendance Camera</a>
-        <a href="/dashboard">View Dashboard</a>
-        <a href="/manage" style="background-color: #9b59b6;">Manage Students</a>
+        <!-- Flash Messages Display -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="flash-message">
+                <i class="fas fa-check-circle"></i> {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Navigation Cards Grid -->
+        <div class="cards-grid">
+            <a href="/register" class="card card-register">
+                <i class="fas fa-user-plus card-icon"></i>
+                <div class="card-title">Register Student</div>
+                <div class="card-desc">Add a new student to the database with their details and face scan.</div>
+            </a>
+
+            <a href="/take_attendance" class="card card-camera">
+                <i class="fas fa-camera card-icon"></i>
+                <div class="card-title">Start Camera</div>
+                <div class="card-desc">Launch the face recognition camera to automatically mark live attendance.</div>
+            </a>
+
+            <a href="/dashboard" class="card card-dashboard">
+                <i class="fas fa-chart-pie card-icon"></i>
+                <div class="card-title">View Dashboard</div>
+                <div class="card-desc">Analyze daily attendance statistics and download CSV reports.</div>
+            </a>
+
+            <a href="/manage" class="card card-manage">
+                <i class="fas fa-users-cog card-icon"></i>
+                <div class="card-title">Manage Students</div>
+                <div class="card-desc">View the list of all registered students, search, and delete records.</div>
+            </a>
+        </div>
     </div>
+
+    <footer>
+        &copy; 2026 Admin Dashboard &bull; All Systems Active
+    </footer>
 </body>
 
 </html>
