@@ -6,6 +6,7 @@ import numpy as np
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
 import camera
+import pandas as pd
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_attendance'
@@ -175,6 +176,25 @@ def recent_attendance():
     conn.close()
     
     return {"recent": [dict(row) for row in logs]}
+
+@app.route('/export_attendance')
+def export_attendance():
+    conn = get_db_connection()
+    query = '''
+        SELECT a.date, a.time, s.name, s.department, a.status
+        FROM attendance a
+        JOIN students s ON a.student_id = s.id
+        ORDER BY a.date DESC, a.time DESC
+    '''
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    
+    csv_data = df.to_csv(index=False)
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=attendance_report.csv"}
+    )
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
