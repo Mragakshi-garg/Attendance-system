@@ -117,7 +117,7 @@ def api_recognize():
 @app.route('/dashboard')
 def dashboard():
     conn = get_db_connection()
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = request.args.get('date', datetime.now().strftime("%Y-%m-%d"))
     
     # 1. Get total distinct students in each department
     departments_query = conn.execute('''
@@ -180,13 +180,16 @@ def recent_attendance():
 @app.route('/export_attendance')
 def export_attendance():
     conn = get_db_connection()
+    today = request.args.get('date', datetime.now().strftime("%Y-%m-%d"))
+    
     query = '''
         SELECT a.date, a.time, s.name, s.department, a.status
         FROM attendance a
         JOIN students s ON a.student_id = s.id
-        ORDER BY a.date DESC, a.time DESC
+        WHERE a.date = ?
+        ORDER BY a.time DESC
     '''
-    df = pd.read_sql_query(query, conn)
+    df = pd.read_sql_query(query, conn, params=(today,))
     conn.close()
     
     csv_data = df.to_csv(index=False)

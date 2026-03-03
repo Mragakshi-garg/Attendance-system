@@ -62,10 +62,19 @@
 
 <body>
     <h1>Admin Attendance Dashboard</h1>
-    <p>Viewing attendance for today: {{ today }}</p>
-    
-    <div style="margin-bottom: 20px;">
-        <a href="/export_attendance" style="background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Download Report</a>
+    <p>Viewing attendance for: <strong>{{ today }}</strong></p>
+
+    <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+        <form action="/dashboard" method="GET" style="display: flex; align-items: center; gap: 10px;">
+            <label for="date" style="font-weight: bold;">Select Date:</label>
+            <input type="date" id="date" name="date" value="{{ today }}"
+                style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+            <button type="submit"
+                style="background-color: #2ecc71; color: white; padding: 10px 15px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Filter</button>
+        </form>
+        <a href="{{ url_for('export_attendance', date=today) }}"
+            style="background-color: #3498db; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold;">Download
+            Report</a>
     </div>
 
     <div class="dashboard-container">
