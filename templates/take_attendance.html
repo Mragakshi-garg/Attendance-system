@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            margin: 20px auto;
+            max-width: 1200px;
+        }
+
+        .video-container {
+            flex: 2;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .live-feed-container {
+            flex: 1;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            min-width: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .live-feed-container h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+
+        .recognized-card {
+            background-color: #e8f8f5;
+            border-left: 5px solid #2ecc71;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .recognized-card h3 {
+            margin: 0 0 5px 0;
+            color: #27ae60;
+            font-size: 1.1em;
+        }
+
+        .recognized-card p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            border: 2px solid #3498db;
+            display: block;
+        }
+
+        canvas {
+            position: absolute;
+            top: 20px;
+            /* Accounts for the padding of video-container */
+            left: 20px;
+            pointer-events: none;
+            /* Let clicks pass through if needed */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Live Attendance Camera</h1>
+    <p>Please stand in front of the camera. The system will recognize registered students and mark attendance.</p>
+
+    <div class="container">
+        <!-- Left Side: Live Webcam Stream with Overlay -->
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="overlay"></canvas>
+            <div style="margin-top: 15px; text-align: center;">
+                <button id="capture-btn"
+                    style="padding: 12px 24px; background-color: #3498db; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 16px; cursor: pointer;">
+                    📸 Click Photo to Match
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Side: Live Logs -->
+        <div class="live-feed-container">
+            <h2>Live Recognitions</h2>
+            <div id="recent-logs">
+                <p style="color: #7f8c8d; font-style: italic;">Awaiting recognition...</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/"
+            style="padding: 10px 20px; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Stop
+            & Back Home</a>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const overlay = document.getElementById('overlay');
+        const overlayCtx = overlay.getContext('2d');
+        const captureCanvas = document.createElement('canvas'); // Hidden canvas for taking snapshots
+        const captureCtx = captureCanvas.getContext('2d');
+
+        // 1. Get Webcam Access
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing webcam:", err);
+                alert("Please allow camera access in your browser preferences to take attendance.");
+            });
+
+        // 2. Adjust overlay canvas size to match the exact video resolution once it finishes loading
+        video.addEventListener('loadedmetadata', () => {
+            // Wait a brief moment for layout to settle before matching dimensions exactly
+            setTimeout(() => {
+                overlay.width = video.clientWidth;
+                overlay.height = video.clientHeight;
+                captureCanvas.width = video.videoWidth;
+                captureCanvas.height = video.videoHeight;
+            }, 500);
+        });
+
+        // Handle window resizing so boxes don't get misaligned
+        window.addEventListener('resize', () => {
+            overlay.width = video.clientWidth;
+            overlay.height = video.clientHeight;
+        });
+
+        // 3. Process frames rapidly and send to Python API ONLY when the button is clicked
+        const captureBtn = document.getElementById('capture-btn');
+        captureBtn.addEventListener('click', () => {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                // Change button text briefly to show activity
+                const originalText = captureBtn.innerHTML;
+                captureBtn.innerHTML = "⏳ Scanning Face...";
+                captureBtn.disabled = true;
+
+                // Draw current video frame to hidden high-res canvas
+                captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+                // Get base64 jpeg
+                const imageData = captureCanvas.toDataURL('image/jpeg', 0.8);
+
+                // Send to API
+                fetch('/api/recognize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        // Clear previous boxes
+                        overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+                        if (data.error) {
+                            console.error("Backend server error:", data.error);
+                            alert("Server error: " + data.error);
+                            return;
+                        }
+
+                        if (data.results && data.results.length > 0) {
+                            // Calculate the scale factor between the actual video resolution and the resized CSS display
+                            const scaleX = overlay.width / video.videoWidth;
+                            const scaleY = overlay.height / video.videoHeight;
+
+                            data.results.forEach(person => {
+                                const box = person.box;
+                                const name = person.name;
+
+                                // Scale bounding box coordinates down to match the CSS display size
+                                const x = box.left * scaleX;
+                                const y = box.top * scaleY;
+                                const width = (box.right - box.left) * scaleX;
+                                const height = (box.bottom - box.top) * scaleY;
+
+                                // Draw bounding box
+                                overlayCtx.strokeStyle = name === "Unknown" ? "#e74c3c" : "#2ecc71"; // Red or Green
+                                overlayCtx.lineWidth = 4;
+                                overlayCtx.strokeRect(x, y, width, height);
+
+                                // Draw name label background
+                                overlayCtx.fillStyle = name === "Unknown" ? "#e74c3c" : "#2ecc71";
+                                overlayCtx.fillRect(x, box.bottom * scaleY, width, 35);
+
+                                // Draw name text
+                                overlayCtx.fillStyle = "white";
+                                overlayCtx.font = "bold 18px Arial";
+                                overlayCtx.fillText(name, x + 8, (box.bottom * scaleY) + 24);
+                            });
+                        } else {
+                            alert("No face detected! Please ensure you are clearly visible in the camera.");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Recognition error:", err);
+                        alert("An error occurred connecting to the recognition server.");
+                    })
+                    .finally(() => {
+                        // Restore button
+                        captureBtn.innerHTML = originalText;
+                        captureBtn.disabled = false;
+
+                        // Clear the box after 3 seconds
+                        setTimeout(() => {
+                            overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+                        }, 3000);
+                    });
+            }
+        });
+
+        // 4. Poll the server every 2 seconds for fresh text recognition logs
+        setInterval(() => {
+            fetch('/api/recent_attendance')
+                .then(response => response.json())
+                .then(data => {
+                    const logsDiv = document.getElementById('recent-logs');
+
+                    if (data.recent.length === 0) {
+                        logsDiv.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">Awaiting recognition...</p>';
+                        return;
+                    }
+
+                    // Rebuild the HTML list
+                    let newHTML = "";
+                    data.recent.forEach(log => {
+                        newHTML += `
+                            <div class="recognized-card">
+                                <h3>✔️ ${log.name}</h3>
+                                <p>${log.department} | ${log.time}</p>
+                            </div>
+                        `;
+                    });
+
+                    // Only update DOM if changes occurred
+                    if (logsDiv.innerHTML !== newHTML) {
+                        logsDiv.innerHTML = newHTML;
+                    }
+                })
+                .catch(err => console.error("Error fetching recent attendance logs:", err));
+        }, 2000);
+    </script>
+</body>
+
+</html>

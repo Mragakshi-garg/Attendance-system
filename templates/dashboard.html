@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .charts-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .status-present {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Admin Attendance Dashboard</h1>
+    <p>Viewing attendance for today: {{ today }}</p>
+
+    <div class="dashboard-container">
+
+        <!-- Circle Graphs for Each Department -->
+        <h2>Department-wise Attendance (Circle Graphs)</h2>
+        <div class="charts-grid">
+            {% for dept, data in stats.items() %}
+            <div class="chart-box">
+                <h3 style="color: #2c3e50;">{{ dept }}</h3>
+                <p style="color: grey; font-size: 0.9em;">Total Students: {{ data.total }}</p>
+                <canvas id="chart-{{ loop.index }}"></canvas>
+            </div>
+            {% else %}
+            <p>No students registered in any department yet.</p>
+            {% endfor %}
+        </div>
+
+        <hr style="border: 0; height: 1px; background: #ddd; margin: 40px 0;">
+
+        <!-- Raw Logs Table -->
+        <h2>Recent Live Attendance Logs</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Department</th>
+                    <th>Time Marked</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.name }}</td>
+                    <td>{{ log.department }}</td>
+                    <td>{{ log.time }}</td>
+                    <td class="status-present">{{ log.status }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center;">No attendance recorded today yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/" style="color: #3498db; text-decoration: none; font-weight: bold;">&larr; Back Home</a>
+        </div>
+    </div>
+
+    <script>
+        // Data passed from Flask to Javascript
+        const statsData = {{ stats | tojson }};
+
+        // Loop through the data and create a Doughnut (Circle) chart for each department
+        let chartIndex = 1;
+        for (const [dept, data] of Object.entries(statsData)) {
+            const ctx = document.getElementById('chart-' + chartIndex);
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Present', 'Absent'],
+                        datasets: [{
+                            data: [data.present, data.absent],
+                            backgroundColor: ['#2ecc71', '#e74c3c'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+            chartIndex++;
+        }
+    </script>
+</body>
+
+</html>

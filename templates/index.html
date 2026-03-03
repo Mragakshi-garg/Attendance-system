@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance</title>
+    <!-- We will use a basic clean CSS file next -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .nav-links a {
+            margin: 15px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .nav-links a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Face Recognition Attendance System</h1>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div style="color: #2ecc71; font-weight: bold; margin-bottom: 20px;">
+        {% for message in messages %}
+        <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <p>Welcome to the automated attendance tracking portal.</p>
+
+    <div class="nav-links">
+        <a href="/register">Register New Student</a>
+        <a href="/take_attendance" style="background-color: #e67e22;">Start Attendance Camera</a>
+        <a href="/dashboard">View Dashboard</a>
+    </div>
+</body>
+
+</html>

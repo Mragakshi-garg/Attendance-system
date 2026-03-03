@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Student</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .form-container label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-container input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .form-container button {
+            width: 100%;
+            padding: 15px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .form-container button:hover {
+            background-color: #27ae60;
+        }
+
+        .flash-messages {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        #video-preview {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 2px solid #ccc;
+            transform: scaleX(-1);
+            /* Mirror the video */
+        }
+
+        /* Hidden input to store JS captured image */
+        #image_data {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Register New Student</h1>
+
+    <div class="form-container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <p style="text-align: center; color: #7f8c8d; margin-bottom: 15px;">Ensure your face is clearly visible.</p>
+
+        <!-- Live Webcam Preview using HTML5 Video. MUST HAVE 'muted' for autoplay to work in Chrome! -->
+        <video id="video-preview" autoplay playsinline muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <form method="POST" action="/register" id="register-form">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required placeholder="Enter student name">
+
+            <label for="department">Department</label>
+            <input type="text" id="department" name="department" required placeholder="e.g., Computer Science">
+
+            <!-- Hidden input that JavaScript will fill with the Base64 image data -->
+            <input type="text" name="image_data" id="image_data" required>
+
+            <button type="button" id="capture-btn">Capture Photo & Register</button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/" style="color: #3498db; text-decoration: none; font-weight: bold;">&larr; Back Home</a>
+        </div>
+    </div>
+
+    <!-- JavaScript to Handle the Webcam and Form Submission -->
+    <script>
+        const video = document.getElementById('video-preview');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const form = document.getElementById('register-form');
+        const imageDataInput = document.getElementById('image_data');
+
+        // Request access to the user's webcam and stream it into the <video> tag
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(stream => {
+                video.srcObject = stream;
+                // Explicitly play it just in case
+                video.play().catch(e => console.error("Play failed:", e));
+            })
+            .catch(err => {
+                console.error("Error accessing webcam: ", err);
+                alert("Please allow camera access to register. Check browser settings.");
+            });
+
+        // When the user clicks the capture button
+        captureBtn.addEventListener('click', () => {
+            // Check if inputs are filled
+            if (!document.getElementById('name').value || !document.getElementById('department').value) {
+                alert("Please fill in your Name and Department first!");
+                return;
+            }
+
+            // Draw current video frame onto the canvas
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert the canvas image to a Base64 string (JPEG)
+            const dataURL = canvas.toDataURL('image/jpeg');
+
+            // Put it in the hidden input field and submit the form
+            imageDataInput.value = dataURL;
+            form.submit();
+        });
+    </script>
+</body>
+
+</html>
